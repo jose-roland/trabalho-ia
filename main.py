@@ -1,16 +1,27 @@
-# This is a sample Python script.
+import pandas as pd
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+pd.set_option('future.no_silent_downcasting', True)
+# Evita warning de que função replace mude dados de forma automática (downcasting)
 
+dataframe = pd.read_csv("customerchurn.csv")
+# Leitura do CSV
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+dataframe["TotalCharges"] = pd.to_numeric(dataframe["TotalCharges"], errors="coerce")
+# Converte os dados de TotalCharges para numéricos
 
+for column in dataframe.columns:
+    if dataframe[column].dtype == object:
+        dataframe[column] = dataframe[column].str.strip()
+        # Remove espaços em branco dos valores, cajo haja algum
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+        dataframe[column] = dataframe[column].replace({
+            "No internet service": "Yes",
+            "No phone service": "No",
+            "0": "No",
+            "1": "Yes",
+            0: "No",
+            1: "Yes"
+        }) # Troca valores inconsistentes por Yes ou No
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+dataframe.loc[dataframe["TotalCharges"].isnull(), "TotalCharges"] = 0
+# Preenche as linhas de TotalCharges nulas com 0
