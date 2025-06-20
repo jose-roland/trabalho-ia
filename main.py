@@ -1,4 +1,5 @@
 import pandas as pd
+from sklearn.preprocessing import StandardScaler
 
 columnsToNumeric = ["SeniorCitizen",
                     "Partner",
@@ -18,14 +19,19 @@ columnsToNumeric = ["SeniorCitizen",
 categoricalColumns = ["gender", "Contract", "PaymentMethod"]
 # Lista das colunas que vão passar pelo one-hot encoding
 
+numericalColumns = ["tenure", "MonthlyCharges", "TotalCharges"]
+
 pd.set_option('future.no_silent_downcasting', True)
 # Evita warning de que função replace mude dados de forma automática (downcasting)
 
 dataframe = pd.read_csv("customerchurn.csv")
-# Leitura do CSV
+# Definindo o Dataframe
+
+scaler = StandardScaler()
+# Definindo o StandardScaler para escalonar variáveis
 
 dataframe["TotalCharges"] = pd.to_numeric(dataframe["TotalCharges"], errors="coerce")
-# Converte os dados de TotalCharges para numéricos
+# Converte os dados de TotalCharges para numéricoso
 
 for column in dataframe.columns:
     if dataframe[column].dtype == object:
@@ -42,3 +48,26 @@ for column in dataframe.columns:
 
 dataframe.loc[dataframe["TotalCharges"].isnull(), "TotalCharges"] = 0
 # Preenche as linhas de TotalCharges nulas com 0
+
+for i in columnsToNumeric:
+    dataframe[i] = pd.to_numeric(dataframe[i], errors="coerce")
+    # Conversão de tipo para numeric
+
+    if i != "TotalCharges":
+        dataframe[i] = dataframe[i].astype(bool)
+        # "Castando" as colunas para tipo bool (exceto TotalCharges)
+
+dataframe = pd.get_dummies(dataframe, columns=categoricalColumns, drop_first=False)
+# Aplica one-hot encoding para todas as colunas no categoricalColumns
+
+internet_dummies = pd.get_dummies(dataframe["InternetService"], prefix="InternetService", drop_first=True)
+# Aplica one-hot encoding apenas para a coluna InternetService, descartando a primeira coluna (No)
+
+dataframe = pd.concat([dataframe, internet_dummies], axis=1)
+# Adiciona as colunas dummies (one-hot encoding) no dataframe
+
+dataframe.drop(columns=["InternetService"], inplace=True)
+# Remove a coluna original do dataframe, deixando apenas as que passaram pelo one-hot encoding
+
+dataframe[numericalColumns] = scaler.fit_transform(dataframe[numericalColumns])
+# Escalonamento de variáveis
