@@ -1,5 +1,7 @@
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
+import seaborn as sb
 
 columnsToNumeric = ["SeniorCitizen",
                     "Partner",
@@ -71,3 +73,18 @@ dataframe.drop(columns=["InternetService"], inplace=True)
 
 dataframe[numericalColumns] = scaler.fit_transform(dataframe[numericalColumns])
 # Escalonamento de variáveis
+
+dataframe["TotalCharges"].hist(bins=30)
+plt.title("Distribuição de TotalCharges")
+plt.xlabel("TotalCharges")
+plt.ylabel("Frequência")
+plt.show()
+
+sb.boxplot(x="Churn", y="MonthlyCharges", data=dataframe)
+plt.title("Boxplot de MonthlyCharges por Churn")
+plt.show()
+
+plt.figure(figsize=(12,8))
+sb.heatmap(dataframe.corr(numeric_only=True), annot=True, fmt=".2f", cmap="coolwarm")
+plt.title("Matriz de correlação")
+plt.show()
