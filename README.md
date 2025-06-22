@@ -15,3 +15,11 @@ Bruno Nogueira
 - Pandas e NumPy
 - Scikit-learn
 - Matplotlib e Seaborn
+
+## 📦 Instalação das Dependências
+
+Para rodar o código, instale as bibliotecas necessárias com o comando abaixo no terminal:
+
+```
+pip install pandas numpy scikit-learn matplotlib seaborn
+```
