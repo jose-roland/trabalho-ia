@@ -122,7 +122,7 @@ X_best = selector.fit_transform(X, y)
 
 selected_features = X.columns[selector.get_support()]
 print(f"As {k_best} melhores features selecionadas são:")
-
+print(list(selected_features))
 
 # --- Aplicação de PCA para Visualização 2D --- 
 print("\n--- Visualização 2D com PCA ---")
@@ -287,3 +287,148 @@ print("\n --- Análise Concluída ---")
 for name, res in results.items():
     print(f" - {name}: ROC-AUC = {res['ROC-AUC']:.4f}")
 print(" -------------------------")
+
+#------------------------------------------------------------------
+# ETAPA 4: CLUSTERING E SEGMENTAÇÃO
+#------------------------------------------------------------------
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+
+# Prepara os dados sem o churn
+# Remove a coluna churn e outras que não devem participar do clustering
+X_clustering = dataframe.drop(columns=['Churn', 'customerID'], errors='ignore')
+
+# Testando valores para ver qual k tem o melhor score de silhueta
+for k in range(2, 10):
+    kmeans_test = KMeans(n_clusters=k, random_state=42)
+    cluster_labels = kmeans_test.fit_predict(X_clustering)
+    sil_score = silhouette_score(X_clustering, cluster_labels)
+    print(f"K={k} => Silhouette Score: {sil_score:.4f}")
+
+# --- Aplicar KMeans ---
+n_clusters = 3  # número de segmentos desejado
+kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+clusters = kmeans.fit_predict(X_clustering)
+
+# Avaliação de silhueta para decidir qual o melhor valor para k
+sil_score = silhouette_score(X_clustering, clusters)
+print(f"\nÍndice de Silhueta para {n_clusters} clusters: {sil_score:.4f}")
+
+# Adiciona os rótulos dos clusters no dataframe original
+dataframe['Cluster'] = clusters
+
+print("\n--- KMeans aplicado com sucesso ---")
+print("Clientes agrupados nos seguintes clusters:")
+print(dataframe['Cluster'].value_counts())
+
+# --- Agrupamento e análise estatística por cluster ---
+cluster_analysis = dataframe.groupby('Cluster').agg({
+    'Churn': 'mean',
+    'MonthlyCharges': 'mean',
+    'StreamingTV': 'mean',
+    'StreamingMovies': 'mean',
+    'PhoneService': 'mean',
+    'InternetService_DSL': 'mean',
+    'InternetService_Fiber optic': 'mean'
+}).rename(columns={
+    'Churn': 'Taxa Média de Churn',
+    'MonthlyCharges': 'Receita Média Mensal',
+    'StreamingTV': 'Uso Médio de TV Streaming',
+    'StreamingMovies': 'Uso Médio de Filmes Streaming',
+    'PhoneService': 'Uso Médio de Telefonia',
+    'InternetService_DSL': 'Uso Médio de DSL',
+    'InternetService_Fiber optic': 'Uso Médio de Fibra Óptica'
+})
+
+print("\n--- Análise por Cluster ---")
+print(cluster_analysis)
+
+# --- Visualização com PCA em 2D ---
+pca_vis = PCA(n_components=2)
+X_vis = pca_vis.fit_transform(X_clustering)
+
+pca_cluster_df = pd.DataFrame(data=X_vis, columns=['PC1', 'PC2'])
+pca_cluster_df['Cluster'] = clusters
+
+plt.figure(figsize=(10, 7))
+sb.scatterplot(data=pca_cluster_df, x='PC1', y='PC2', hue='Cluster', palette='Set2')
+plt.title('Visualização dos Clusters com PCA')
+plt.xlabel('Componente Principal 1')
+plt.ylabel('Componente Principal 2')
+plt.legend(title='Cluster')
+plt.grid(True)
+plt.show()
+
+if 'Cluster' not in dataframe.columns:
+    raise ValueError("A coluna 'Cluster' não foi encontrada no dataframe. Execute o KMeans antes.")
+
+# Cálculo da análise por cluster
+cluster_analysis = dataframe.groupby('Cluster').agg({
+    'Churn': 'mean',                 # Taxa média de churn
+    'MonthlyCharges': 'mean',       # Receita média mensal
+    'InternetService_DSL': 'mean',  # Uso de DSL
+    'PhoneService': 'mean',         # Uso de Telefonia
+    'StreamingTV': 'mean',          # Uso de TV Streaming
+    'StreamingMovies': 'mean'       # Uso de Filmes Streaming
+})
+
+# Renomeia as colunas para melhor legibilidade
+cluster_analysis.rename(columns={
+    'Churn': 'Taxa Média de Churn',
+    'MonthlyCharges': 'Receita Média Mensal',
+    'InternetService_DSL': 'Uso de DSL (%)',
+    'PhoneService': 'Uso de Telefonia (%)',
+    'StreamingTV': 'Uso de TV Streaming (%)',
+    'StreamingMovies': 'Uso de Filmes Streaming (%)'
+}, inplace=True)
+
+# Multiplica os percentuais por 100 para melhor legibilidade
+cluster_analysis[['Uso de DSL (%)',
+                  'Uso de Telefonia (%)',
+                  'Uso de TV Streaming (%)',
+                  'Uso de Filmes Streaming (%)']] *= 100
+
+# Formatação para duas casas decimais
+cluster_analysis = cluster_analysis.round(2)
+
+# Mostra a análise
+print("\n--- Análise de Clusters ---")
+print(cluster_analysis)
+
+from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
+
+# Selecionar apenas as colunas numéricas (já escalonadas) usadas para clustering
+# Excluindo 'customerID' e variáveis não utilizadas
+dados_para_pca = dataframe.drop(['customerID', 'Cluster'], axis=1)
+
+# Aplicação de PCA para reduzir para 2 dimensões
+pca = PCA(n_components=2)
+pca_resultado = pca.fit_transform(dados_para_pca)
+
+# Criação de DataFrame com os componentes principais e o cluster
+df_pca = pd.DataFrame()
+df_pca['PCA1'] = pca_resultado[:, 0]
+df_pca['PCA2'] = pca_resultado[:, 1]
+df_pca['Cluster'] = dataframe['Cluster']
+
+# Plot dos clusters no gráfico 2D
+plt.figure(figsize=(10, 6))
+cores = ['red', 'blue', 'green', 'purple', 'orange', 'cyan', 'brown']
+
+for cluster_id in df_pca['Cluster'].unique():
+    cluster_data = df_pca[df_pca['Cluster'] == cluster_id]
+    plt.scatter(cluster_data['PCA1'], cluster_data['PCA2'],
+                label=f'Cluster {cluster_id}', alpha=0.6, color=cores[cluster_id % len(cores)])
+
+plt.title('Visualização dos Clusters em 2D (PCA)', fontsize=14)
+plt.xlabel('Componente Principal 1')
+plt.ylabel('Componente Principal 2')
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+cluster_analysis = cluster_analysis * 100
+print("\n--- Estatísticas (%) por Cluster ---")
+print(cluster_analysis.round(2))
