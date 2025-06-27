@@ -28,7 +28,7 @@ for column in dataframe.columns:
         dataframe[column] = dataframe[column].str.strip()
 
 #------------------------------------------------------------------
-# ETAPA 4.2: ENGENHARIA DE ATRIBUTOS (PARTE 1)
+# ETAPA 2: ENGENHARIA DE ATRIBUTOS (PARTE 1)
 #------------------------------------------------------------------
 # Criando a feature derivada ANTES do escalonamento para usar os valores originais.
 # [cite_start]Isso segue a recomendação do projeto de criar features como "gastos médios". [cite: 15]
@@ -102,7 +102,7 @@ plt.show()
 
 
 #------------------------------------------------------------------
-# ETAPA 4.2: SELEÇÃO DE FEATURES E REDUÇÃO DE DIMENSIONALIDADE
+# ETAPA 2: SELEÇÃO DE FEATURES E REDUÇÃO DE DIMENSIONALIDADE
 #------------------------------------------------------------------
 from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.decomposition import PCA
